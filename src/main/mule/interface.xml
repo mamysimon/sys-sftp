@@ -17,12 +17,12 @@
         <apikit:router config-ref="flux-invoices-config" />
 		<error-handler>
 			<on-error-propagate type="APIKIT:BAD_REQUEST">
-				<set-variable value="400" doc:name="httpStatus" doc:id="101059a4-284f-473b-92b7-b69e74b9df66" variableName="httpStatus" />
-				<set-variable value="BAD_REQUEST" doc:name="reasonPhrase" doc:id="1e878984-caec-4ad3-a8be-705cfa9138e4" variableName="reasonPhrase" />
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "You can only filter by currency values USD or EUR"}]' doc:name="Set Payload" doc:id="3b739ef7-9360-4c5e-81d7-73dc35ac6bd1" mimeType="application/json" />
+				<set-variable value="400" doc:name="httpStatus" doc:id="48a89a8c-1311-46ec-a041-2ed9d9e78d89" variableName="httpStatus" />
+				<set-variable value="BAD_REQUEST" doc:name="reasonPhrase" doc:id="5a347b24-8dc4-4eae-9941-da498644a788" variableName="reasonPhrase" />
+				<set-payload value='#[output application/json&#10;---&#10;{"message": "You can only filter by currency values USD or EUR"}]' doc:name="Set Payload" doc:id="00ba8664-ef53-42b5-b292-4dcee3cb4373" mimeType="application/json" />
             </on-error-propagate>
 			<on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
+				<ee:transform doc:name="Transform Message">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -121,4 +121,12 @@ output application/json
     <flow name="get:\invoices\(id):flux-invoices-config">
 		<flow-ref doc:name="getInvoice" doc:id="0f96d9ca-ecc3-4ff2-91c6-2b1060426939" name="getInvoice"/>
     </flow>
+	<flow name="flux-planifFlow" doc:id="e39a81bf-8eb2-40d3-a2b1-e85d040d7012" >
+		<scheduler doc:name="Scheduler" doc:id="2c154a62-bfa8-4dd8-8690-26b618dbdcbd" >
+			<scheduling-strategy >
+				<cron expression="0 0 2 * * ?"/>
+			</scheduling-strategy>
+		</scheduler>
+		<flow-ref doc:name="planif" doc:id="4593506a-d764-429f-bcc8-93bde6ca4011" name="planif" />
+	</flow>
 </mule>

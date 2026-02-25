@@ -9,7 +9,7 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 	<flow name="getInvoices" doc:id="beeea7ea-3026-4042-ac0c-d92e89c2b0a2" >
 		<set-variable value='#[attributes.queryParams.currency default ""]' doc:name="currency" doc:id="c6d99fda-767f-44a7-b98b-94d6c6721944" variableName="currency" />
 		<validation:matches-regex doc:name="Is currency valid" doc:id="5ead5f5e-3dc8-42f7-936c-741b3e8bab95" value="#[vars.currency]" regex='^(USD|EUR|)$'/>
-		<sftp:read doc:name="Read invoices" doc:id="49eb23c7-612b-4f02-8cea-1b46bac618d9" config-ref="SFTP_Config" path="${sftp.file_name}" outputMimeType="application/json"/>
+		<sftp:read doc:name="Read invoices" doc:id="49eb23c7-612b-4f02-8cea-1b46bac618d9" config-ref="SFTP_Config" path="${sftp.invoices_file}" outputMimeType="application/json"/>
 		<ee:transform doc:name="Transform Message" doc:id="69739c1e-6582-484a-b08f-d8c5201c3d18" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -31,7 +31,7 @@ filterByCurrency(payload, vars.currency) map invoiceMapping($.data)
 	</flow>
 	<flow name="getInvoice" doc:id="90f3dce8-2c60-476a-8415-fd0332633f6c" >
 		<set-variable value="#[attributes.uriParams.id]" doc:name="id" doc:id="9c487c0d-86e0-4894-87d2-4c3375799f2d" variableName="id" />
-		<sftp:read doc:name="Read invoice" doc:id="e5c55743-9e66-4bad-8b04-3eb6997fdbb4" config-ref="SFTP_Config" path="${sftp.file_name}" outputMimeType="application/json"/>
+		<sftp:read doc:name="Read invoice" doc:id="e5c55743-9e66-4bad-8b04-3eb6997fdbb4" config-ref="SFTP_Config" path="${sftp.invoices_file}" outputMimeType="application/json"/>
 		<ee:transform doc:name="Transform Message" doc:id="c6c7ae2a-d3a3-431b-8909-1bbf5adf00f1">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
@@ -57,4 +57,35 @@ else
 			</on-error-continue>
 		</error-handler>
 	</flow>
+	<sub-flow name="planif" doc:id="b07dbc42-8bc9-4930-8d82-91f221a5c51b" >
+		<sftp:read doc:name="Read" doc:id="e86bdbff-6e2d-429a-9a86-c364d8e92f60" config-ref="SFTP_Config" path="${sftp.hoinaco_file}" outputMimeType='application/csv; separator=";"' />
+		<ee:transform doc:name="Transform Message" doc:id="bc5bc949-f864-4011-b4a8-1b1ea4792366" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dwl::planif
+
+output application/csv separator=";"
+---
+payload map((occupation) -> {
+	"matricule": occupation.CODSEL,
+	"codeCentre": "",
+	"typeOccupation": typeOccupation(occupation.TEXTE_01),
+	"natureOccupation": natureOccupation(occupation.TEXTE_01),
+	"dateDebut": formatDate(occupation.DATDEB, "000000"),
+	"dateFin": formatDate(occupation.DATFIN, "235959"),
+	"statut": "",
+	"poids": "",
+	"tempsTravail": "",
+	"tempsPresenceHeures": "",
+	"tempsPresenceMinutes": "",
+	"idTypeCompteur": "",
+	"nbTitreRestaurant": "",
+	"commentaire": "",
+	"operation": operation(occupation.LIG)
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="bcba0490-32e4-49ea-bbf8-f2145a0f4e85" message="#[payload]" />
+		<sftp:write doc:name="Write" doc:id="0d0034e9-9ff7-48e6-a042-f8cb88ab0f74" config-ref="SFTP_Config" path="${sftp.absences_file}" />
+	</sub-flow>
 </mule>
