@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="getInvoices" doc:id="beeea7ea-3026-4042-ac0c-d92e89c2b0a2" >
+		<set-variable value='#[attributes.queryParams.currency default ""]' doc:name="currency" doc:id="c6d99fda-767f-44a7-b98b-94d6c6721944" variableName="currency" />
+		<validation:matches-regex doc:name="Is currency valid" doc:id="5ead5f5e-3dc8-42f7-936c-741b3e8bab95" value="#[vars.currency]" regex='^(USD|EUR|)$'/>
+		<sftp:read doc:name="Read invoices" doc:id="49eb23c7-612b-4f02-8cea-1b46bac618d9" config-ref="SFTP_Config" path="${sftp.file_name}" outputMimeType="application/json"/>
+		<ee:transform doc:name="Transform Message" doc:id="69739c1e-6582-484a-b08f-d8c5201c3d18" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dwl::invoice
+output application/json
+
+fun filterByCurrency(invoices, currency: String) =
+    if (currency == "")
+        invoices
+    else
+    	invoices filter ((invoice) -> upper(invoice.data.currency) == currency)
+    	
+---
+
+filterByCurrency(payload, vars.currency) map invoiceMapping($.data)
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="getInvoice" doc:id="90f3dce8-2c60-476a-8415-fd0332633f6c" >
+		<set-variable value="#[attributes.uriParams.id]" doc:name="id" doc:id="9c487c0d-86e0-4894-87d2-4c3375799f2d" variableName="id" />
+		<sftp:read doc:name="Read invoice" doc:id="e5c55743-9e66-4bad-8b04-3eb6997fdbb4" config-ref="SFTP_Config" path="${sftp.file_name}" outputMimeType="application/json"/>
+		<ee:transform doc:name="Transform Message" doc:id="c6c7ae2a-d3a3-431b-8909-1bbf5adf00f1">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import * from dwl::invoice
+output application/json
+
+var data = (payload filter $.data.id == vars.id)[0].data
+
+---
+
+if (data == null)
+	null
+else
+	invoiceMapping(data)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<validation:is-not-null doc:name="Is not null" doc:id="d0ae8e0b-6968-456d-aa33-522b0af34310" value="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1a9d1a0f-8124-416b-9954-cbb3459b3ef9" type="VALIDATION:NULL">
+				<set-variable value="707" doc:name="httpStatus" doc:id="6c28d8be-932a-4ca5-9441-048ddd975ec7" variableName="httpStatus" />
+				<set-variable value="SORRY" doc:name="reasonPhrase" doc:id="90b81ff4-695f-4174-a83e-20327be77165" variableName="reasonPhrase" />
+				<set-payload value='#[output application/json&#10;---&#10;{"message": "invoice not found for the id $(vars.id)"}]' doc:name="Set Payload" doc:id="405e0377-45b2-40b4-86cb-d8a671108141" mimeType="application/json" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
