@@ -4,4 +4,6 @@ sftp:
   user: "linkr"
   password: "linkr2026"
   working_directory: "upload/theu"
-  file_name: "invoices.json"
+  invoices_file: "invoices.json"
+  hoinaco_file: "hoinaco.csv"
+  absences_file: "mamy/Absences.csv"
