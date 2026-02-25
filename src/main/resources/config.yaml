@@ -1,0 +1,7 @@
+sftp:
+  host: "sftp.px.bylinkr.com"
+  port: "8422"
+  user: "linkr"
+  password: "linkr2026"
+  working_directory: "upload/theu"
+  file_name: "invoices.json"
