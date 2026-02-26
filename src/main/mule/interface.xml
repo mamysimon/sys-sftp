@@ -1,28 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
-    <http:listener-config name="flux-invoices-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8081" />
-    </http:listener-config>
-    <apikit:config name="flux-invoices-config" api="resource::c3ef6630-a96b-4ccb-987c-446347eaad0b:flux-invoices:1.0.0:raml:zip:flux-invoices.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" queryParamsStrictValidation="true"/>
-    <flow name="flux-invoices-main">
-        <http:listener config-ref="flux-invoices-httpListenerConfig" path="/api/*">
+    <apikit:config name="sftp-system-api-config" api="sftp-system-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" queryParamsStrictValidation="true"/>
+	<flow name="sftp-system-api-main">
+        <http:listener path="/api/v1/*" config-ref="sftp-system-api-httpListenerConfig">
             <http:response statusCode="#[vars.httpStatus default 200]" reasonPhrase='#[vars.reasonPhrase default "OK"]'>
-                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+                <http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	correlationId: correlationId,
+	statusCode: vars.httpStatus default 200,
+	dateTime: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss"},
+	message: vars.reasonPhrase default "OK",
+	data: payload
+}]]]></http:body>
+				<http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]" reasonPhrase='#[vars.reasonPhrase default "SERVER ERROR"]'>
-                <http:body><![CDATA[#[payload]]]></http:body>
+            <http:error-response statusCode="#[vars.httpStatus default 500]" reasonPhrase='#[vars.reasonPhrase default "Server Error"]'>
+                <http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	correlationId: correlationId,
+	statusCode: vars.httpStatus default 500,
+	namespace: error.errorType.namespace,
+	identifier: error.errorType.identifier,
+	description: payload.message,
+}]]]></http:body>
                 <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:error-response>
         </http:listener>
-        <apikit:router config-ref="flux-invoices-config" />
-		<error-handler>
-			<on-error-propagate type="APIKIT:BAD_REQUEST">
-				<set-variable value="400" doc:name="httpStatus" doc:id="48a89a8c-1311-46ec-a041-2ed9d9e78d89" variableName="httpStatus" />
-				<set-variable value="BAD_REQUEST" doc:name="reasonPhrase" doc:id="5a347b24-8dc4-4eae-9941-da498644a788" variableName="reasonPhrase" />
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "You can only filter by currency values USD or EUR"}]' doc:name="Set Payload" doc:id="00ba8664-ef53-42b5-b292-4dcee3cb4373" mimeType="application/json" />
+        <apikit:router config-ref="sftp-system-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+				<ee:transform doc:name="Transform Message" doc:id="cf8e5706-0ce8-4d78-8c7f-c0cabe3b0611" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[404]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
             </on-error-propagate>
-			<on-error-propagate type="APIKIT:NOT_FOUND">
-				<ee:transform doc:name="Transform Message">
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -34,7 +58,7 @@ output application/json
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
-			<on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
                 <ee:transform doc:name="Transform Message">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
@@ -47,7 +71,7 @@ output application/json
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
-			<on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
                 <ee:transform doc:name="Transform Message">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
@@ -60,7 +84,7 @@ output application/json
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
-			<on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
                 <ee:transform doc:name="Transform Message">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
@@ -73,7 +97,7 @@ output application/json
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
-			<on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
                 <ee:transform doc:name="Transform Message">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
@@ -88,45 +112,79 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
-    <flow name="flux-invoices-console">
-        <http:listener config-ref="flux-invoices-httpListenerConfig" path="/console/*">
-            <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:error-response>
-        </http:listener>
-        <apikit:console config-ref="flux-invoices-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
+    <flow name="get:\invoices:sftp-system-api-config">
+		<flow-ref doc:name="getInvoices" doc:id="f36127d7-1cab-4403-9612-cd855107e4f1" name="sub-invoices-get" />
     </flow>
-    <flow name="get:\invoices:flux-invoices-config">
-		<flow-ref doc:name="getInvoices" doc:id="e7637374-d1e8-4dc5-8143-b1b7ea21f00b" name="getInvoices"/>
+    <flow name="get:\invoices\(id):sftp-system-api-config">
+		<flow-ref doc:name="getInvoice" doc:id="585bd41e-fdb4-4122-b472-43221ff9457f" name="sub-invoice-get-by-id" />
     </flow>
-    <flow name="get:\invoices\(id):flux-invoices-config">
-		<flow-ref doc:name="getInvoice" doc:id="0f96d9ca-ecc3-4ff2-91c6-2b1060426939" name="getInvoice"/>
-    </flow>
-	<flow name="flux-planifFlow" doc:id="e39a81bf-8eb2-40d3-a2b1-e85d040d7012" >
-		<scheduler doc:name="Scheduler" doc:id="2c154a62-bfa8-4dd8-8690-26b618dbdcbd" >
-			<scheduling-strategy >
-				<cron expression="0 0 2 * * ?"/>
+	<flow name="impl-map-planif" doc:id="4d3d9988-efd6-45f6-bfdb-a440cec917a7">
+		<scheduler doc:name="Scheduler" doc:id="cfb17ced-9a4e-4ebc-ab18-690d7abba539">
+			<scheduling-strategy>
+				<cron expression="0 0 2 * * ?" />
 			</scheduling-strategy>
 		</scheduler>
-		<flow-ref doc:name="planif" doc:id="4593506a-d764-429f-bcc8-93bde6ca4011" name="planif" />
+		<flow-ref doc:name="planif" doc:id="124dc7ed-d436-43f0-b746-46fe6c9b9b0d" name="sub-planif-mapping" />
 	</flow>
+	<flow name="get:\products:sftp-system-api-config">
+		<flow-ref doc:name="Flow Reference" doc:id="72fda037-d0ad-4b05-940c-552656b47fa8" name="sub-products-get"/>
+    </flow>
+	<flow name="delete:\products\(id):sftp-system-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 404,
+  namespace: "RESOURCE_NAME",
+  identifier: "NOT_FOUND",
+  description: "product not found with id xxx"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+	<flow name="post:\products:sftp-system-api-config">
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 406,
+  namespace: "RESOURCE_NAME",
+  identifier: "NOT_ACCEPTABLE",
+  description: "product already exists."
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\products\(id):sftp-system-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 404,
+  namespace: "RESOURCE_NAME",
+  identifier: "NOT_FOUND",
+  description: "product not found with id xxx"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
 </mule>

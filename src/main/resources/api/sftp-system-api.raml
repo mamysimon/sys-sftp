@@ -1,0 +1,140 @@
+#%RAML 1.0
+title: SFTP System API
+description: Manage Invoices and Products
+
+#############
+## Headers ##
+#############
+
+baseUri: https://{host}/api/v1
+baseUriParameters:
+  host:
+    type: string
+    displayName: Domain name
+    example: app.cloudhub.com
+protocols:
+  - HTTPS
+
+uses:
+  paradisoLibrary: /exchange_modules/c3ef6630-a96b-4ccb-987c-446347eaad0b/paradiso-library/1.0.0/paradiso-library.raml
+
+securedBy:
+  - paradisoLibrary.clientIdEnforcement
+
+types: 
+  Invoice: !include datatypes/Invoice.raml
+  Product: !include datatypes/Product.raml
+
+###############
+## Endpoints ##
+###############
+
+/invoices:
+  get:
+    displayName: Get Invoices
+    is:
+    - paradisoLibrary.error400
+    queryParameters:
+      currency:
+        displayName: Currency of the Invoice
+        required: false
+        type: string
+    responses:
+      200:
+        body:
+          application/json:
+            type: paradisoLibrary.standardSuccess
+            properties:
+              statusCode:
+                type: number
+              data:
+                type: Invoice[]
+  
+  /{id}:
+    uriParameters:
+      id:
+        type: string
+        description: Unique id of Invoice
+    get:
+      displayName: Get Invoice by id
+      responses:
+        200:
+          body:
+            application/json:
+              type: paradisoLibrary.standardSuccess
+              properties:
+                statusCode:
+                  type: number
+                data:
+                  type: Invoice
+
+/products:
+  get:
+    displayName: Get Products
+    queryParameters:
+      category:
+        displayName: Category of the Product
+        required: false
+        type: string
+    responses:
+      200:
+        body:
+          application/json:
+            type: paradisoLibrary.standardSuccess
+            properties:
+              statusCode:
+                type: number
+              data:
+                type: Product[]
+
+  post:
+    displayName: Create Product
+    is:
+      - paradisoLibrary.error406
+    responses:
+      201:
+        body:
+          application/json:
+            type: paradisoLibrary.standardSuccess
+            properties:
+              statusCode:
+                type: number
+                example: 201
+  
+  /{id}:
+    uriParameters:
+      id:
+        type: number
+        description: Unique id of Product
+
+    is:
+      - paradisoLibrary.error404
+
+    post:
+      displayName: Add stock to a Product by id
+      responses:
+        201:
+          body:
+            application/json:
+              type: paradisoLibrary.standardSuccess
+              properties:
+                statusCode:
+                  type: number
+                  example: 201
+
+    delete:
+      displayName: Delete Product or its stock
+      queryParameters:
+        qty:
+          displayName: Quantity to delete
+          required: false
+          type: number
+      responses:
+        204:
+          body:
+            application/json:
+              type: paradisoLibrary.standardSuccess
+              properties:
+                statusCode:
+                  type: number
+                  example: 204

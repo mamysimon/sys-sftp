@@ -1,6 +1,6 @@
 %dw 2.0
 
-type auto_90f3dce8_2c60_476a_8415_fd0332633f6c_Input_Attributes = {|
+type auto_9ca81b50_55e9_4130_9ee2_b9c0b4b89f13_Input_Attributes = {|
   clientCertificate?: {|
     publicKey?: {|  |}, 
     "type"?: String, 
@@ -9,14 +9,14 @@ type auto_90f3dce8_2c60_476a_8415_fd0332633f6c_Input_Attributes = {|
   headers: {|  |}, 
   listenerPath: String, 
   method: String, 
-  queryParams: {|  |}, 
+  queryParams: {| category?: "Graphisme" | "Sécurité" | "Stockage" | "Audio" | "Accessoire" | "Electronique" |}, 
   queryString: String, 
   relativePath: String, 
   remoteAddress: String, 
   requestPath: String, 
   requestUri: String, 
   scheme: String, 
-  uriParams: {| id: String |}, 
+  uriParams: {| host: String |}, 
   version: String, 
   localAddress: String
 |}
