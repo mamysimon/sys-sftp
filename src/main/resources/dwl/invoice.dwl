@@ -26,3 +26,9 @@ fun invoiceMapping(data)  = {
 			}
 		)
 }
+
+fun filterByCurrency(invoices, currency: String) =
+    if (currency == "")
+        invoices
+    else
+    	invoices filter ((invoice) -> upper(invoice.data.currency) == currency)

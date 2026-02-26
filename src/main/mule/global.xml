@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
 	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="981752a0-830e-4063-81e9-fcb750ea3e28" >
-		<sftp:connection workingDir="${sftp.working_directory}" host="${sftp.host}" port="${sftp.port}" username="${sftp.user}" password="${sftp.password}" />
+		<sftp:connection workingDir="${sftp.working_directory}" host="${sftp.host}" port="${sftp.port}" username="${sftp.user}" password="${secure::sftp.password}" />
 	</sftp:config>
-	<configuration-properties doc:name="Configuration properties" doc:id="b2f2d2f5-941a-4213-bc3d-de4e5ade8956" file="config.yaml" />
+	<http:listener-config name="sftp-system-api-httpListenerConfig" doc:name="HTTP Listener config" doc:id="8c7cb112-85fd-4502-9e20-5bd6ece9bdf9" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}"/>
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="d24d3a13-7f6e-4e0f-9cc0-8ab8cca64a36" file="properties/${mule.env}-properties.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="2bc3fda1-1dea-4c6d-9f27-9f52233a549b" file="properties/${mule.env}-properties.yaml" key="${mule.encryptionKey}" />
 </mule>

@@ -1,9 +1,14 @@
+http:
+  port: "8081"
+
 sftp:
   host: "sftp.px.bylinkr.com"
   port: "8422"
   user: "linkr"
-  password: "linkr2026"
+  password: "![1Q/EViuP4xrWHl/PnYWOJQ==]"
   working_directory: "upload/theu"
+  personal_directory: "Mamy"
   invoices_file: "invoices.json"
   hoinaco_file: "hoinaco.csv"
-  absences_file: "mamy/Absences.csv"
+  absences_file: "Absences.csv"
+  product_file: "products.csv"

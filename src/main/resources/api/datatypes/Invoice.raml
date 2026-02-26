@@ -1,0 +1,28 @@
+#%RAML 1.0 DataType
+
+type: object
+properties:
+  id: string
+  total: integer
+  currency:
+    type: string
+    enum:
+      - EUR
+      - USD
+  customer:
+    type: object
+    properties:
+      id: string
+      city: string
+      country: string
+      postalCode: string
+      email: string
+      name: string
+      phone: string
+  lineItems:
+    type: array
+    items:
+      type: object
+      properties:
+        id: string
+        amount: integer
