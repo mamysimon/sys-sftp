@@ -6,65 +6,62 @@
 http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
-	<flow name="sub-invoices-get" doc:id="beeea7ea-3026-4042-ac0c-d92e89c2b0a2" >
+	<flow name="impl-get-invoices" doc:id="beeea7ea-3026-4042-ac0c-d92e89c2b0a2" >
 		<set-variable value='#[attributes.queryParams.currency default ""]' doc:name="[currency]" doc:id="c6d99fda-767f-44a7-b98b-94d6c6721944" variableName="currency" />
-		<validation:matches-regex doc:name="Is currency valid" doc:id="5ead5f5e-3dc8-42f7-936c-741b3e8bab95" value="#[vars.currency]" regex='^(USD|EUR|)$'/>
-		<sftp:read doc:name="Retrieve invoices" doc:id="49eb23c7-612b-4f02-8cea-1b46bac618d9" config-ref="SFTP_Config" path="${sftp.invoices_file}" outputMimeType="application/json"/>
+		<validation:matches-regex doc:name="Is currency valid" doc:id="5ead5f5e-3dc8-42f7-936c-741b3e8bab95" value="#[vars.currency]" regex='^(USD|EUR|)$'>
+			<error-mapping sourceType="VALIDATION:MISMATCH" targetType="APP:BAD_REQUEST" />
+		</validation:matches-regex>
+		<sftp:read doc:name="Retrieve invoices" doc:id="49eb23c7-612b-4f02-8cea-1b46bac618d9" config-ref="SFTP_Config" path="${sftp.invoices-file}" outputMimeType="application/json"/>
 		<ee:transform doc:name="Transform Message" doc:id="69739c1e-6582-484a-b08f-d8c5201c3d18" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 import * from dwl::invoice
 output application/json
-   	
 ---
-
 filterByCurrency(payload, vars.currency) map invoiceMapping($.data)
 ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<error-handler >
-			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f372fa6e-85c7-4a26-a0ea-8a0ea30358d4" type="VALIDATION:MISMATCH">
-				<set-variable value="400" doc:name="[httpStatus]" doc:id="cd52d500-e7c0-4426-a130-0968acf1516d" variableName="httpStatus" />
-				<set-variable value="BAD_REQUEST" doc:name="[reasonPhrase]" doc:id="77ae3922-9704-4074-a049-2b3c4a6b874a" variableName="reasonPhrase" />
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "Currency filter should be EUR or USD"}]' doc:name="Set Payload" doc:id="4c13a308-5c34-4112-a36a-9f547ac30c63" mimeType="application/json" />
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f372fa6e-85c7-4a26-a0ea-8a0ea30358d4" type="APP:BAD_REQUEST">
+				<set-payload value='#[output application/json&#10;---&#10;{"message": "Currency filter should be EUR or USD."}]' doc:name="Set Payload" doc:id="4c13a308-5c34-4112-a36a-9f547ac30c63" mimeType="application/json" />
 			</on-error-propagate>
 		</error-handler>
 	</flow>
-	<flow name="sub-invoice-get-by-id" doc:id="90f3dce8-2c60-476a-8415-fd0332633f6c" >
-		<set-variable value="#[attributes.uriParams.id]" doc:name="[id]" doc:id="9c487c0d-86e0-4894-87d2-4c3375799f2d" variableName="id" />
-		<sftp:read doc:name="Retrieve invoices" doc:id="e5c55743-9e66-4bad-8b04-3eb6997fdbb4" config-ref="SFTP_Config" path="${sftp.invoices_file}" outputMimeType="application/json"/>
+	<flow name="impl-get-invoice-by-id" doc:id="90f3dce8-2c60-476a-8415-fd0332633f6c" >
+		<set-variable value="#[attributes.uriParams.id]" doc:name="[invoiceId]" doc:id="9c487c0d-86e0-4894-87d2-4c3375799f2d" variableName="invoiceId" />
+		<sftp:read doc:name="Retrieve invoices" doc:id="e5c55743-9e66-4bad-8b04-3eb6997fdbb4" config-ref="SFTP_Config" path="${sftp.invoices-file}" outputMimeType="application/json"/>
 		<ee:transform doc:name="Transform Message" doc:id="c6c7ae2a-d3a3-431b-8909-1bbf5adf00f1">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 import * from dwl::invoice
 output application/json
 
-var data = (payload filter $.data.id == vars.id)[0].data
-
+var data = (payload filter $.data.id == vars.invoiceId)[0].data
 ---
-
 if (data == null)
 	null
 else
 	invoiceMapping(data)]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<validation:is-not-null doc:name="Is not null" doc:id="d0ae8e0b-6968-456d-aa33-522b0af34310" value="#[payload]"/>
+		<validation:is-not-null doc:name="Is not null" doc:id="d0ae8e0b-6968-456d-aa33-522b0af34310" value="#[payload]">
+			<error-mapping sourceType="VALIDATION:NULL" targetType="APP:SORRY" />
+		</validation:is-not-null>
 		<error-handler >
-			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="05e83fdc-b8e0-4eb3-a472-cd5019e83841" type="VALIDATION:NULL">
-				<set-variable value="707" doc:name="[httpStatus]" doc:id="6c28d8be-932a-4ca5-9441-048ddd975ec7" variableName="httpStatus" />
-				<set-variable value="SORRY" doc:name="[reasonPhrase]" doc:id="90b81ff4-695f-4174-a83e-20327be77165" variableName="reasonPhrase" />
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "invoice not found for the id $(vars.id)"}]' doc:name="Set Payload" doc:id="405e0377-45b2-40b4-86cb-d8a671108141" mimeType="application/json" />
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="05e83fdc-b8e0-4eb3-a472-cd5019e83841" type="APP:SORRY">
+				<set-variable value="707" doc:name="[httpStatus]" doc:id="36dd06e4-53df-4d16-8e7f-19bb34e0193a" variableName="httpStatus" />
+				<set-variable value="SORRY" doc:name="[reasonPhrase]" doc:id="553f69aa-5db3-493c-804b-d71a121100ad" variableName="reasonPhrase" />
+				<set-payload value='#[output application/json&#10;---&#10;{"message": "Invoice not found for the id $(vars.invoiceId)."}]' doc:name="Set Payload" doc:id="405e0377-45b2-40b4-86cb-d8a671108141" mimeType="application/json" />
 			</on-error-propagate>
 		</error-handler>
 	</flow>
 	<sub-flow name="sub-planif-mapping" doc:id="b07dbc42-8bc9-4930-8d82-91f221a5c51b" >
-		<sftp:read doc:name="Retrieve occupations" doc:id="e86bdbff-6e2d-429a-9a86-c364d8e92f60" config-ref="SFTP_Config" path="${sftp.hoinaco_file}" outputMimeType='application/csv; separator=";"' />
+		<sftp:read doc:name="Retrieve occupations" doc:id="e86bdbff-6e2d-429a-9a86-c364d8e92f60" config-ref="SFTP_Config" path="${sftp.hoinaco-file}" outputMimeType='application/csv; separator=";"' />
 		<ee:transform doc:name="Transform Message" doc:id="bc5bc949-f864-4011-b4a8-1b1ea4792366" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 import * from dwl::planif
-
 output application/csv separator=";"
 ---
 payload map((occupation) -> {
@@ -86,21 +83,50 @@ payload map((occupation) -> {
 })]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<sftp:write doc:name="Write" doc:id="0d0034e9-9ff7-48e6-a042-f8cb88ab0f74" config-ref="SFTP_Config" path="${sftp.personal_directory}/${sftp.absences_file}" />
+		<sftp:write doc:name="Write occupations" doc:id="0d0034e9-9ff7-48e6-a042-f8cb88ab0f74" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.absences-file}" />
 	</sub-flow>
-	<sub-flow name="sub-products-get" doc:id="9ca81b50-55e9-4130-9ee2-b9c0b4b89f13" >
-		<set-variable value='#[attributes.queryParams.category default ""]' doc:name="[category]" doc:id="14c3d1bb-ad97-43e8-bb93-92917eb53438" variableName="category"/>
-		<sftp:read doc:name="Retrieve products" doc:id="03dec836-23ad-4354-907b-6adfa66db7fb" config-ref="SFTP_Config" path="${sftp.personal_directory}/${mule.env}/${sftp.product_file}" outputMimeType="application/csv"/>
+	<flow name="impl-get-products" doc:id="12df7521-1698-409a-803c-3e7e41ce98ec" >
+		<set-variable value='#[attributes.queryParams.category default ""]' doc:name="[category]" doc:id="14c3d1bb-ad97-43e8-bb93-92917eb53438" variableName="category" />
+		<validation:matches-regex doc:name="Is category valid" doc:id="040a2786-bba9-4ed0-91c4-4f36d450909a" value="#[vars.category]" regex="^(Accessoire|Audio|Électronique|Graphisme|écurité|Stockage|)$">
+			<error-mapping sourceType="VALIDATION:MISMATCH" targetType="APP:BAD_REQUEST" />
+		</validation:matches-regex>
+		<sftp:read doc:name="Retrieve products" doc:id="03dec836-23ad-4354-907b-6adfa66db7fb" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" outputMimeType="application/csv" />
 		<ee:transform doc:name="Transform Message" doc:id="0e0972da-7c84-48f0-9a7c-b65e268a0d3e">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 import * from dwl::product
 output application/json
-
 ---
-
 filterByCategory(payload, vars.category)]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-	</sub-flow>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="179472fd-84fa-4350-bb0a-0b9fd5710a4c" type="APP:BAD_REQUEST">
+				<set-payload value='#[output application/json&#10;---&#10;{"message": "Category filter should be Accessoire, Audio, Électronique, Graphisme, Sécurité or Stockage."}]' doc:name="Set Payload" doc:id="2a4736c3-18dd-4b65-9ee1-c7e15ba946c7" mimeType="application/json" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="impl-create-product" doc:id="5112de7d-e341-4f9b-a2d6-4fabdb1aa0b4" >
+		<set-variable value="#[payload.id]" doc:name="[productId]" doc:id="672318ef-f0b8-4084-935e-254f95250e99" variableName="productId"/>
+		<sftp:read doc:name="Retrieve products to [products]" doc:id="563cf23f-9ce0-4a07-a22e-8646c3ed801f" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" outputMimeType="application/csv" target="products" />
+		<validation:is-true doc:name="id does not exists" doc:id="c18c626f-9438-407b-8cee-e6cdfa6f65be" expression="#[!(vars.products map $.id contains (vars.productId as String))]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_ACCEPTABLE" />
+		</validation:is-true>
+		<ee:transform doc:name="Transform Message" doc:id="4a721b21-4ef9-4ecb-82d9-0b645e2ba5ea">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<sftp:write doc:name="Add new Product" doc:id="2fae842e-5ea9-4fb0-9bdb-adfa9d8e5986" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}">
+			<sftp:content ><![CDATA[#[vars.products ++ payload]]]></sftp:content>
+		</sftp:write>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1f803476-ac27-4f44-b122-87f9d02a59f9" type="APP:NOT_ACCEPTABLE">
+				<set-payload value='#[{"message": "id $(vars.productId) already exists."}]' doc:name="Set Payload" doc:id="4b41ebbf-2580-4fed-bb7f-730849503cff" mimeType="application/json" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
 </mule>

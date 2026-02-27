@@ -91,6 +91,9 @@ types:
     displayName: Create Product
     is:
       - paradisoLibrary.error406
+    body:
+      application/json:
+        type: Product
     responses:
       201:
         body:
@@ -106,10 +109,10 @@ types:
       id:
         type: number
         description: Unique id of Product
-
+  
     is:
       - paradisoLibrary.error404
-
+  
     post:
       displayName: Add stock to a Product by id
       responses:
@@ -121,7 +124,7 @@ types:
                 statusCode:
                   type: number
                   example: 201
-
+  
     delete:
       displayName: Delete Product or its stock
       queryParameters:
