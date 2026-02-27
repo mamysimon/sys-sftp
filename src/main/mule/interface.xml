@@ -127,38 +127,29 @@ output application/json
 		<flow-ref doc:name="sub-planif-mapping" doc:id="124dc7ed-d436-43f0-b746-46fe6c9b9b0d" name="sub-planif-mapping" />
 	</flow>
 	<flow name="get:\products:sftp-system-api-config">
+		<logger level="DEBUG" doc:name="Start getProducts flow" doc:id="310de8d6-cbe1-4d92-a30c-40dc2abd3e4f" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "Start getProducts flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
 		<flow-ref doc:name="impl-get-products" doc:id="72fda037-d0ad-4b05-940c-552656b47fa8" name="impl-get-products"/>
 		<set-variable value="Products retrieved successfully." doc:name="[message]" doc:id="91ad1e53-73e4-4f04-ae4c-223c377d98e7" variableName="message" />
+		<logger level="DEBUG" doc:name="End getProducts" doc:id="1cdbd82f-909d-4f3e-8426-87f47799b62b" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "End getProducts flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
     </flow>
 	<flow name="delete:\products\(id):sftp-system-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
-  statusCode: 404,
-  namespace: "RESOURCE_NAME",
-  identifier: "NOT_FOUND",
-  description: "product not found with id xxx"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <logger level="DEBUG" doc:name="Start deleteProduct flow" doc:id="b2d4e943-ae81-4830-a169-1966dba61c8e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "Start addStockToProduct flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
+		<flow-ref doc:name="impl-delete-product" doc:id="c27bb018-390c-4383-bbcb-9d509f0978e6" name="impl-delete-product"/>
+		<set-variable value="NO_CONTENT" doc:name="[reasonPhrase]" doc:id="df4ebe9a-d480-4789-b7cb-152d3b87b0a4" variableName="reasonPhrase" />
+		<logger level="DEBUG" doc:name="End deleteProduct flow" doc:id="2a393142-4edd-461b-aa69-d8e5174d94df" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "End getProducts flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
     </flow>
 	<flow name="post:\products:sftp-system-api-config">
+		<logger level="DEBUG" doc:name="Start createProduct flow" doc:id="0bf6c0e9-56f2-408b-bb14-81776bc8558f" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "Start createProduct flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
 		<flow-ref doc:name="impl-create-product" doc:id="8d97a920-ac0e-4602-9fe6-79e9f894483d" name="impl-create-product" />
 		<set-variable value="CREATED" doc:name="[reasonPhrase]" doc:id="72dee796-f17f-4fd6-875e-847561110802" variableName="reasonPhrase"/>
 		<set-variable value="Product created successfully." doc:name="[message]" doc:id="b7492967-6c35-4534-8023-4e055ea26a85" variableName="message"/>
+		<logger level="DEBUG" doc:name="End createProduct flow" doc:id="a1381cb4-68c8-42c6-90e8-d0b0ea4f4201" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "End createProduct flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
     </flow>
     <flow name="post:\products\(id):sftp-system-api-config">
+		<logger level="DEBUG" doc:name="Start addStockToProduct flow" doc:id="d676f0e4-5508-4acd-8c4b-f59cd7c6f443" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "Start addStockToProduct flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
 		<flow-ref doc:name="impl-add-product-stock" doc:id="169afb94-04a5-4d4c-b742-5a9121699d15" name="impl-add-product-stock"/>
 		<set-variable value="CREATED" doc:name="[reasonPhrase]" doc:id="c0f69417-bce5-492c-80af-279dd90eacd7" variableName="reasonPhrase" />
 		<set-variable value="Product stock added successfully." doc:name="[message]" doc:id="7a0afc76-b9b8-4168-a3f7-d49b5fbe3904" variableName="message" />
+		<logger level="DEBUG" doc:name="End addStockToProduct flow" doc:id="bbc37778-c5a3-4e35-bcc2-96805432bd3a" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"step": "End createProduct flow",&#10;	"data": &#10;		{&#10;			"business": attributes,&#10;			"technical": payload&#10;		}&#10;}]' category="sys-sftp"/>
     </flow>
 </mule>

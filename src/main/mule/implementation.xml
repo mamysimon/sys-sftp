@@ -164,7 +164,7 @@ vars.products map ((product) ->
 )]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<sftp:write doc:name="Add new Product" doc:id="9387ea75-0aa3-491a-94d1-9c867ef80872" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" >
+		<sftp:write doc:name="Add new stock to Product" doc:id="9387ea75-0aa3-491a-94d1-9c867ef80872" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" >
 		</sftp:write>
 		<ee:transform doc:name="format Product" doc:id="f2389a6f-7fd6-4174-baeb-84c788fbb5ee">
 			<ee:message>
@@ -178,6 +178,40 @@ formatProduct((payload filter $.id == vars.productId)[0])]]></ee:set-payload>
 		<error-handler >
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d132a065-b95b-4e8b-8b8e-274ca5b73522" type="APP:NOT_FOUND">
 				<set-payload value="#[{&quot;message&quot;: &quot;id $(vars.productId) doesn't exist.&quot;}]" doc:name="Set Payload" doc:id="38b28262-4039-4dac-8f10-cd74f7174d43"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="impl-delete-product" doc:id="ba2cc925-6cc7-4d91-b09f-6bb200e778e6" >
+		<set-variable value="#[attributes.uriParams.id]" doc:name="[productId]" doc:id="f5141887-6d04-4573-9584-a8ea00a405cb" variableName="productId"/>
+		<set-variable value="#[attributes.queryParams.qty]" doc:name="[qty]" doc:id="723b0107-7c20-4495-a2e7-7b101ef48be4" variableName="qty"/>
+		<sftp:read doc:name="Retrieve products to [products]" doc:id="13977b84-c4d9-4c69-82ba-7dc60fb8e4dc" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" outputMimeType="application/csv" target="products" />
+		<validation:is-true doc:name="id exists" doc:id="1e421b2e-4325-4f17-81ee-3ac35b160bb3" expression="#[vars.products map $.id contains (vars.productId as String)]" >
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<ee:transform doc:name="Transform Message" doc:id="aeb5c196-6239-4e3b-b08e-eb8f43fc76d7">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+vars.products map ((product) -> 
+	{
+		"id": product.id,	
+		"name": product.name,	
+		"category": product.category,		
+		"price": product.price,		
+		"stock":
+			if (product.id == vars.productId)
+				(product.stock as Number) - (vars.qty default product.stock)
+			else
+				product.stock
+	}
+) filter $.stock > 0]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		<sftp:write doc:name="delete Product" doc:id="eea0680b-b807-4887-94a9-545662f3c260" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1983abf2-29ce-4e4c-b18b-1874592ceb23" type="APP:NOT_FOUND" >
+				<set-payload value="#[{&quot;message&quot;: &quot;id $(vars.productId) doesn't exist.&quot;}]" doc:name="Set Payload" doc:id="6fda2617-15ae-4bfb-b123-fb51761612f0" />
 			</on-error-propagate>
 		</error-handler>
 	</flow>

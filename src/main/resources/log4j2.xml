@@ -29,6 +29,8 @@
         <AsyncRoot level="INFO">
             <AppenderRef ref="file"/>
         </AsyncRoot>
+        
+        <AsyncLogger name="sys-sftp" level="DEBUG"/>
     </Loggers>
 
 </Configuration>
