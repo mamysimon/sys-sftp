@@ -20,9 +20,13 @@ http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/sc
 			<set-variable value="400" doc:name="[httpStatus]" doc:id="972ce62e-cab9-475f-8f2d-0f383442703c" variableName="httpStatus" />
 			<set-variable value="BAD_REQUEST" doc:name="[reasonPhrase]" doc:id="d2e02575-ad5c-459c-92ff-1c844b1be702" variableName="reasonPhrase" />
 		</on-error-propagate>
-		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate1" doc:id="f15f7329-fded-4d50-ba47-336b291bd769" type="APP:NOT_ACCEPTABLE" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f15f7329-fded-4d50-ba47-336b291bd769" type="APP:NOT_ACCEPTABLE" >
 			<set-variable value="406" doc:name="[httpStatus]" doc:id="58b6fa8d-e5f8-4544-942c-e6776cc93345" variableName="httpStatus" />
 			<set-variable value="NOT_ACCEPTABLE" doc:name="[reasonPhrase]" doc:id="d8a8f710-b9c0-42cb-9447-cdc3cc0a25a9" variableName="reasonPhrase" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="5d420a24-50e0-4db9-821c-077751e88dd5" type="APP:NOT_FOUND" >
+			<set-variable value="404" doc:name="[httpStatus]" doc:id="e7a909f2-b8aa-4ac0-9ab0-c208dbc47622" variableName="httpStatus" />
+			<set-variable value="NOT_FOUND" doc:name="[reasonPhrase]" doc:id="6a4f233a-b1b6-4702-8aaf-3234fb740403" variableName="reasonPhrase" />
 		</on-error-propagate>
 	</error-handler>
 </mule>

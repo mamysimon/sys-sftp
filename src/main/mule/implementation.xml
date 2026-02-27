@@ -24,7 +24,7 @@ filterByCurrency(payload, vars.currency) map invoiceMapping($.data)
 		</ee:transform>
 		<error-handler >
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f372fa6e-85c7-4a26-a0ea-8a0ea30358d4" type="APP:BAD_REQUEST">
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "Currency filter should be EUR or USD."}]' doc:name="Set Payload" doc:id="4c13a308-5c34-4112-a36a-9f547ac30c63" mimeType="application/json" />
+				<set-payload value='#[{"message": "Currency filter should be EUR or USD."}]' doc:name="Set Payload" doc:id="4c13a308-5c34-4112-a36a-9f547ac30c63"/>
 			</on-error-propagate>
 		</error-handler>
 	</flow>
@@ -52,7 +52,7 @@ else
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="05e83fdc-b8e0-4eb3-a472-cd5019e83841" type="APP:SORRY">
 				<set-variable value="707" doc:name="[httpStatus]" doc:id="36dd06e4-53df-4d16-8e7f-19bb34e0193a" variableName="httpStatus" />
 				<set-variable value="SORRY" doc:name="[reasonPhrase]" doc:id="553f69aa-5db3-493c-804b-d71a121100ad" variableName="reasonPhrase" />
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "Invoice not found for the id $(vars.invoiceId)."}]' doc:name="Set Payload" doc:id="405e0377-45b2-40b4-86cb-d8a671108141" mimeType="application/json" />
+				<set-payload value='#[{"message": "Invoice not found for the id $(vars.invoiceId)."}]' doc:name="Set Payload" doc:id="405e0377-45b2-40b4-86cb-d8a671108141"/>
 			</on-error-propagate>
 		</error-handler>
 	</flow>
@@ -91,18 +91,18 @@ payload map((occupation) -> {
 			<error-mapping sourceType="VALIDATION:MISMATCH" targetType="APP:BAD_REQUEST" />
 		</validation:matches-regex>
 		<sftp:read doc:name="Retrieve products" doc:id="03dec836-23ad-4354-907b-6adfa66db7fb" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" outputMimeType="application/csv" />
-		<ee:transform doc:name="Transform Message" doc:id="0e0972da-7c84-48f0-9a7c-b65e268a0d3e">
+		<ee:transform doc:name="format Products" doc:id="0e0972da-7c84-48f0-9a7c-b65e268a0d3e">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 import * from dwl::product
 output application/json
 ---
-filterByCategory(payload, vars.category)]]></ee:set-payload>
+filterByCategory(payload, vars.category) map formatProduct($)]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<error-handler >
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="179472fd-84fa-4350-bb0a-0b9fd5710a4c" type="APP:BAD_REQUEST">
-				<set-payload value='#[output application/json&#10;---&#10;{"message": "Category filter should be Accessoire, Audio, Électronique, Graphisme, Sécurité or Stockage."}]' doc:name="Set Payload" doc:id="2a4736c3-18dd-4b65-9ee1-c7e15ba946c7" mimeType="application/json" />
+				<set-payload value='#[{"message": "Category filter should be Accessoire, Audio, Électronique, Graphisme, Sécurité or Stockage."}]' doc:name="Set Payload" doc:id="2a4736c3-18dd-4b65-9ee1-c7e15ba946c7"/>
 			</on-error-propagate>
 		</error-handler>
 	</flow>
@@ -123,9 +123,61 @@ payload]]></ee:set-payload>
 		<sftp:write doc:name="Add new Product" doc:id="2fae842e-5ea9-4fb0-9bdb-adfa9d8e5986" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}">
 			<sftp:content ><![CDATA[#[vars.products ++ payload]]]></sftp:content>
 		</sftp:write>
+		<ee:transform doc:name="format Product" doc:id="0f9cc48e-f12c-4f31-b0a4-03def8f6877c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dwl::product
+output application/json
+---
+formatProduct(payload[0])]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 		<error-handler >
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1f803476-ac27-4f44-b122-87f9d02a59f9" type="APP:NOT_ACCEPTABLE">
-				<set-payload value='#[{"message": "id $(vars.productId) already exists."}]' doc:name="Set Payload" doc:id="4b41ebbf-2580-4fed-bb7f-730849503cff" mimeType="application/json" />
+				<set-payload value='#[{"message": "id $(vars.productId) already exists."}]' doc:name="Set Payload" doc:id="4b41ebbf-2580-4fed-bb7f-730849503cff"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="impl-add-product-stock" doc:id="a6a3d999-86d2-414b-9eac-149f663225ec" >
+		<set-variable value="#[attributes.uriParams.id]" doc:name="[productId]" doc:id="52b3b298-88ce-4d17-83db-96e4c5821dcf" variableName="productId"/>
+		<sftp:read doc:name="Retrieve products to [products]" doc:id="53a4d10a-10e7-44a1-98b1-304cf8165d8a" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" outputMimeType="application/csv" target="products" />
+		<validation:is-true doc:name="id exists" doc:id="9dfbfd3d-512b-4eb6-a726-006bde104b19" expression="#[vars.products map $.id contains (vars.productId as String)]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<ee:transform doc:name="Transform Message" doc:id="500f1d55-ba32-4c8e-9d22-c416f438ee17" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+vars.products map ((product) -> 
+	{
+		"id": product.id,	
+		"name": product.name,	
+		"category": product.category,		
+		"price": product.price,		
+		"stock":
+			if (product.id == vars.productId)
+				(product.stock as Number) + 1
+			else
+				product.stock
+	}
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<sftp:write doc:name="Add new Product" doc:id="9387ea75-0aa3-491a-94d1-9c867ef80872" config-ref="SFTP_Config" path="${sftp.personal-directory}/${sftp.product-file}" >
+		</sftp:write>
+		<ee:transform doc:name="format Product" doc:id="f2389a6f-7fd6-4174-baeb-84c788fbb5ee">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import * from dwl::product
+output application/json
+---
+formatProduct((payload filter $.id == vars.productId)[0])]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d132a065-b95b-4e8b-8b8e-274ca5b73522" type="APP:NOT_FOUND">
+				<set-payload value="#[{&quot;message&quot;: &quot;id $(vars.productId) doesn't exist.&quot;}]" doc:name="Set Payload" doc:id="38b28262-4039-4dac-8f10-cd74f7174d43"/>
 			</on-error-propagate>
 		</error-handler>
 	</flow>
