@@ -157,24 +157,8 @@ output application/json
 		<set-variable value="Product created successfully." doc:name="[message]" doc:id="b7492967-6c35-4534-8023-4e055ea26a85" variableName="message"/>
     </flow>
     <flow name="post:\products\(id):sftp-system-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
-  statusCode: 404,
-  namespace: "RESOURCE_NAME",
-  identifier: "NOT_FOUND",
-  description: "product not found with id xxx"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+		<flow-ref doc:name="impl-add-product-stock" doc:id="169afb94-04a5-4d4c-b742-5a9121699d15" name="impl-add-product-stock"/>
+		<set-variable value="CREATED" doc:name="[reasonPhrase]" doc:id="c0f69417-bce5-492c-80af-279dd90eacd7" variableName="reasonPhrase" />
+		<set-variable value="Product stock added successfully." doc:name="[message]" doc:id="7a0afc76-b9b8-4168-a3f7-d49b5fbe3904" variableName="message" />
     </flow>
 </mule>
