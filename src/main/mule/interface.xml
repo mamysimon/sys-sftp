@@ -11,7 +11,7 @@ output application/json
 	correlationId: correlationId,
 	statusCode: vars.httpStatus default 200,
 	dateTime: now() as String {format: "yyyy-MM-dd'T'HH:mm:ss"},
-	message: vars.reasonPhrase default "OK",
+	message: vars.message default "Operation completed successfully",
 	data: payload
 }]]]></http:body>
 				<http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
@@ -113,10 +113,10 @@ output application/json
         </error-handler>
     </flow>
     <flow name="get:\invoices:sftp-system-api-config">
-		<flow-ref doc:name="getInvoices" doc:id="f36127d7-1cab-4403-9612-cd855107e4f1" name="sub-invoices-get" />
+		<flow-ref doc:name="impl-get-invoices" doc:id="f36127d7-1cab-4403-9612-cd855107e4f1" name="impl-get-invoices" />
     </flow>
     <flow name="get:\invoices\(id):sftp-system-api-config">
-		<flow-ref doc:name="getInvoice" doc:id="585bd41e-fdb4-4122-b472-43221ff9457f" name="sub-invoice-get-by-id" />
+		<flow-ref doc:name="impl-get-invoice-by-id" doc:id="585bd41e-fdb4-4122-b472-43221ff9457f" name="impl-get-invoice-by-id" />
     </flow>
 	<flow name="impl-map-planif" doc:id="4d3d9988-efd6-45f6-bfdb-a440cec917a7">
 		<scheduler doc:name="Scheduler" doc:id="cfb17ced-9a4e-4ebc-ab18-690d7abba539">
@@ -124,10 +124,11 @@ output application/json
 				<cron expression="0 0 2 * * ?" />
 			</scheduling-strategy>
 		</scheduler>
-		<flow-ref doc:name="planif" doc:id="124dc7ed-d436-43f0-b746-46fe6c9b9b0d" name="sub-planif-mapping" />
+		<flow-ref doc:name="sub-planif-mapping" doc:id="124dc7ed-d436-43f0-b746-46fe6c9b9b0d" name="sub-planif-mapping" />
 	</flow>
 	<flow name="get:\products:sftp-system-api-config">
-		<flow-ref doc:name="Flow Reference" doc:id="72fda037-d0ad-4b05-940c-552656b47fa8" name="sub-products-get"/>
+		<flow-ref doc:name="impl-get-products" doc:id="72fda037-d0ad-4b05-940c-552656b47fa8" name="impl-get-products"/>
+		<set-variable value="Products retrieved successfully." doc:name="[message]" doc:id="91ad1e53-73e4-4f04-ae4c-223c377d98e7" variableName="message" />
     </flow>
 	<flow name="delete:\products\(id):sftp-system-api-config">
         <ee:transform doc:name="Transform Message">
@@ -151,20 +152,9 @@ output application/json
         </ee:transform>
     </flow>
 	<flow name="post:\products:sftp-system-api-config">
-		<ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
-  statusCode: 406,
-  namespace: "RESOURCE_NAME",
-  identifier: "NOT_ACCEPTABLE",
-  description: "product already exists."
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+		<flow-ref doc:name="impl-create-product" doc:id="8d97a920-ac0e-4602-9fe6-79e9f894483d" name="impl-create-product" />
+		<set-variable value="CREATED" doc:name="[reasonPhrase]" doc:id="72dee796-f17f-4fd6-875e-847561110802" variableName="reasonPhrase"/>
+		<set-variable value="Product created successfully." doc:name="[message]" doc:id="b7492967-6c35-4534-8023-4e055ea26a85" variableName="message"/>
     </flow>
     <flow name="post:\products\(id):sftp-system-api-config">
         <ee:transform doc:name="Transform Message">

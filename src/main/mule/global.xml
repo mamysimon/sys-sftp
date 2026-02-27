@@ -7,11 +7,22 @@ http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sft
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
 	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="981752a0-830e-4063-81e9-fcb750ea3e28" >
-		<sftp:connection workingDir="${sftp.working_directory}" host="${sftp.host}" port="${sftp.port}" username="${sftp.user}" password="${secure::sftp.password}" />
+		<sftp:connection workingDir="${sftp.working-directory}" host="${sftp.host}" port="${sftp.port}" username="${sftp.user}" password="${secure::sftp.password}" />
 	</sftp:config>
 	<http:listener-config name="sftp-system-api-httpListenerConfig" doc:name="HTTP Listener config" doc:id="8c7cb112-85fd-4502-9e20-5bd6ece9bdf9" >
-		<http:listener-connection host="0.0.0.0" port="${http.port}"/>
+		<http:listener-connection host="0.0.0.0" port="${http.port}" readTimeout="3000"/>
 	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="d24d3a13-7f6e-4e0f-9cc0-8ab8cca64a36" file="properties/${mule.env}-properties.yaml" />
 	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="2bc3fda1-1dea-4c6d-9f27-9f52233a549b" file="properties/${mule.env}-properties.yaml" key="${mule.encryptionKey}" />
+	<configuration doc:name="Configuration" doc:id="52624756-b12d-4792-ab8c-11cf91102d27" defaultErrorHandler-ref="global-error-handler" />
+	<error-handler name="global-error-handler" doc:id="98494dd9-ec27-4139-b576-d98b053be881" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6aedee37-34be-4940-ba76-5e9404c5c376" type="APP:BAD_REQUEST">
+			<set-variable value="400" doc:name="[httpStatus]" doc:id="972ce62e-cab9-475f-8f2d-0f383442703c" variableName="httpStatus" />
+			<set-variable value="BAD_REQUEST" doc:name="[reasonPhrase]" doc:id="d2e02575-ad5c-459c-92ff-1c844b1be702" variableName="reasonPhrase" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate1" doc:id="f15f7329-fded-4d50-ba47-336b291bd769" type="APP:NOT_ACCEPTABLE" >
+			<set-variable value="406" doc:name="[httpStatus]" doc:id="58b6fa8d-e5f8-4544-942c-e6776cc93345" variableName="httpStatus" />
+			<set-variable value="NOT_ACCEPTABLE" doc:name="[reasonPhrase]" doc:id="d8a8f710-b9c0-42cb-9447-cdc3cc0a25a9" variableName="reasonPhrase" />
+		</on-error-propagate>
+	</error-handler>
 </mule>
